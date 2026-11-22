@@ -14,6 +14,19 @@ class PedidoRepository:
         )
 
     @staticmethod
+    def visibles_para(usuario):
+        """
+        El ADMIN ve todos los pedidos; el CLIENTE, solo los suyos (spec.md, sección 4.2).
+
+        Filtrar desde el origen evita el IDOR (Clase 6): para la API, los pedidos ajenos
+        directamente no existen y su detalle responde 404.
+        """
+        pedidos = PedidoRepository.get_queryset()
+        if usuario.is_staff:
+            return pedidos
+        return pedidos.filter(cliente=usuario)
+
+    @staticmethod
     def crear(**datos):
         return Pedido.objects.create(**datos)
 

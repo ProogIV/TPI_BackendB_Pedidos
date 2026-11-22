@@ -7,6 +7,7 @@ valor sensible escrito.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Terceros
     "rest_framework",
+    "rest_framework_simplejwt",
     "django_filters",
     # Propias
     "pedidos",
@@ -125,6 +127,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     # Formato uniforme de errores del spec: {"error": true, "mensaje": ...} (Clase 4)
     "EXCEPTION_HANDLER": "pedidos.exceptions.custom_exception_handler",
+    # Autenticación con JWT (Clase 6). La sesión queda solo para usar la Browsable API.
+    # El orden importa: con JWT primero, una petición sin token recibe 401 y no 403.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    # Seguro por defecto: toda la API exige estar autenticado salvo lo que se abra a propósito
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     # Paginación y filtros (Clase 5)
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
@@ -140,3 +152,16 @@ REST_FRAMEWORK = {
 INVENTARIO_API_URL = os.getenv("INVENTARIO_API_URL", "http://127.0.0.1:3000/api")
 PAGOS_API_URL = os.getenv("PAGOS_API_URL", "http://127.0.0.1:8001/api")
 TIMEOUT_SERVICIOS = 5  # segundos (spec.md, regla 7)
+
+
+# --- JWT (Clase 6, spec.md sección 7) ---
+# Pedidos es el único servicio que emite tokens. Inventario los valida con la MISMA clave
+# (JWT_SIGNING_KEY), por eso se lee del .env y no es la SECRET_KEY de Django.
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": os.getenv("JWT_SIGNING_KEY", SECRET_KEY),
+}

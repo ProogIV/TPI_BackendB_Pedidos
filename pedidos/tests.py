@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from rest_framework.test import APITestCase
 
@@ -51,6 +52,11 @@ class PedidoSerializerTests(APITestCase):
 
 
 class PedidoApiTests(APITestCase):
+    def setUp(self):
+        # Desde el TP 2 la API exige token: estos tests consultan como ADMIN, que ve todos los pedidos
+        self.admin = User.objects.create_user("admin", password="clave-segura-123", is_staff=True)
+        self.client.force_authenticate(self.admin)
+
     def test_lista_paginada_del_mas_nuevo_al_mas_viejo(self):
         primero = crear_pedido()
         segundo = crear_pedido()
