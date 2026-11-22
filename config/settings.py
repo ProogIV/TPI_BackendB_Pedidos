@@ -34,11 +34,14 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "django_filters",
+    "corsheaders",
     # Propias
     "pedidos",
 ]
 
 MIDDLEWARE = [
+    # CORS tiene que ir primero, antes de CommonMiddleware (Clase 8)
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -137,6 +140,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # Límite de peticiones (Clase 8). Al superarlo: 429 Too Many Requests + header Retry-After
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",  # anónimos, por IP
+        "rest_framework.throttling.UserRateThrottle",  # autenticados, por usuario
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/minute",
+        "user": "100/minute",
+        "login": "5/minute",  # contra la fuerza bruta en /api/token/ (pedidos/throttles.py)
+    },
     # Paginación y filtros (Clase 5)
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
@@ -164,4 +177,35 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": os.getenv("JWT_SIGNING_KEY", SECRET_KEY),
+}
+
+
+# --- CORS (Clase 8) ---
+# Solo estos orígenes pueden leer las respuestas de la API desde el navegador.
+# Nunca CORS_ALLOW_ALL_ORIGINS = True: le daría permiso a cualquier sitio web.
+
+CORS_ALLOWED_ORIGINS = [
+    origen for origen in os.getenv(
+        "CORS_ALLOWED_ORIGINS", "http://localhost:5500,http://127.0.0.1:5500"
+    ).split(",") if origen
+]
+
+
+# --- Auditoría de seguridad (Clase 8) ---
+# Además del modelo SecurityLog (consultable en /admin/), los eventos quedan en un archivo
+# de texto que sigue existiendo aunque la base de datos se comprometa.
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "archivo_seguridad": {
+            "class": "logging.FileHandler",
+            "filename": BASE_DIR / "security.log",
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "security": {"handlers": ["archivo_seguridad"], "level": "WARNING"},
+    },
 }

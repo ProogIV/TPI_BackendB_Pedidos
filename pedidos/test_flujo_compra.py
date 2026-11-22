@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from rest_framework.test import APITestCase
 
 from .models import Pedido
@@ -47,6 +48,7 @@ def inventario_simulado(descuento, reposicion=REPOSICION_OK):
 class FlujoDeCompraTests(APITestCase):
 
     def setUp(self):
+        cache.clear()  # reinicia los contadores del rate limiting entre tests
         # Desde el TP 2 solo un CLIENTE autenticado puede comprar
         self.cliente = User.objects.create_user("ana", password="clave-segura-123")
         self.client.force_authenticate(self.cliente)

@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -19,6 +20,9 @@ def crear_pedido(cliente):
 
 
 class RegistroTests(APITestCase):
+    def setUp(self):
+        cache.clear()  # reinicia los contadores del rate limiting entre tests
+
     def test_registro_crea_un_cliente_con_la_clave_hasheada(self):
         r = self.client.post(
             "/api/auth/register/",
@@ -63,6 +67,9 @@ class RegistroTests(APITestCase):
 
 
 class LoginTests(APITestCase):
+    def setUp(self):
+        cache.clear()  # reinicia los contadores del rate limiting entre tests
+
     def login(self, username):
         return self.client.post("/api/token/", {"username": username, "password": CLAVE}, format="json")
 
@@ -97,6 +104,7 @@ class LoginTests(APITestCase):
 
 class RolesTests(APITestCase):
     def setUp(self):
+        cache.clear()  # reinicia los contadores del rate limiting entre tests
         self.ana = User.objects.create_user("ana", password=CLAVE)
         self.beto = User.objects.create_user("beto", password=CLAVE)
         self.admin = User.objects.create_user("jefe", password=CLAVE, is_staff=True)

@@ -1,14 +1,21 @@
+import logging
+
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from rest_framework import generics, mixins, permissions, status, viewsets
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from .models import SecurityLog
 from .permissions import EsCliente
 from .repositories import PedidoRepository
 from .serializers import PedidoSerializer
 from .serializers_auth import RegisterSerializer, TokenConRolSerializer
 from .services import PedidoService
+from .throttles import LoginRateThrottle
+
+security_logger = logging.getLogger("security")
 
 
 def health_check(request):
@@ -27,9 +34,24 @@ class RegisterView(generics.CreateAPIView):
 
 
 class LoginView(TokenObtainPairView):
-    """POST /api/token/ → devuelve access y refresh; el access incluye el rol."""
+    """
+    POST /api/token/ → devuelve access y refresh; el access incluye el rol.
+
+    Máximo 5 intentos por minuto por IP, y cada intento fallido queda auditado (Clase 8).
+    """
 
     serializer_class = TokenConRolSerializer
+    throttle_classes = [LoginRateThrottle]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except AuthenticationFailed:
+            ip = request.META.get("REMOTE_ADDR")
+            username = str(request.data.get("username", ""))[:150]
+            SecurityLog.objects.create(accion="login_fallido", detalle=f"usuario={username}", ip=ip)
+            security_logger.warning("Login fallido para usuario %s desde %s", username, ip)
+            raise  # el cliente recibe el mismo 401 de siempre
 
 
 # --- Pedidos ---
