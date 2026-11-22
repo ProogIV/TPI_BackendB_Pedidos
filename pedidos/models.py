@@ -52,3 +52,28 @@ class Pedido(models.Model):
 
     def __str__(self):
         return f"Pedido #{self.pk} — {self.cantidad} x {self.producto_id} ({self.estado})"
+
+
+class SecurityLog(models.Model):
+    """
+    Registro de auditoría de eventos de seguridad (Clase 8): quién, qué, cuándo y desde dónde.
+
+    Nunca se guardan contraseñas ni tokens, ni siquiera las contraseñas incorrectas.
+    """
+
+    # SET_NULL: si se borra el usuario, el registro de auditoría se conserva
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    accion = models.CharField(max_length=50)  # ej: "login_fallido"
+    detalle = models.CharField(max_length=255, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado"]
+        verbose_name = "registro de seguridad"
+        verbose_name_plural = "registros de seguridad"
+
+    def __str__(self):
+        return f"{self.creado:%Y-%m-%d %H:%M} {self.accion} ({self.ip})"

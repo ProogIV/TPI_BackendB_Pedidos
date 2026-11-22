@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from rest_framework.test import APITestCase
 
@@ -53,6 +54,7 @@ class PedidoSerializerTests(APITestCase):
 
 class PedidoApiTests(APITestCase):
     def setUp(self):
+        cache.clear()  # reinicia los contadores del rate limiting entre tests
         # Desde el TP 2 la API exige token: estos tests consultan como ADMIN, que ve todos los pedidos
         self.admin = User.objects.create_user("admin", password="clave-segura-123", is_staff=True)
         self.client.force_authenticate(self.admin)

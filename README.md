@@ -38,6 +38,16 @@ El **cliente** crea y ve solo sus pedidos; el **administrador** (`is_staff`) ve 
 
 Para crear un administrador: `python manage.py createsuperuser`.
 
+## Seguridad (Clase 8)
+
+| Medida | Detalle |
+|---|---|
+| Rate limiting en el login | 5 intentos por minuto por IP; el sexto responde `429` con el header `Retry-After` |
+| Límites generales | 20 peticiones por minuto para anónimos (por IP) y 100 para usuarios autenticados |
+| CORS | Solo los orígenes de `CORS_ALLOWED_ORIGINS` (el frontend) pueden leer las respuestas desde el navegador |
+| Auditoría | Cada login fallido se guarda en el modelo `SecurityLog` (visible en `/admin/`) y en el archivo `security.log`, sin la contraseña |
+| Sanitización (`nh3`) | No se aplica: los pedidos no tienen campos de texto libre. Todos los datos de entrada se validan con formato estricto (ID de MongoDB, enteros positivos) |
+
 ## Endpoints de pedidos
 
 | Método | Ruta | Descripción |
@@ -64,6 +74,7 @@ pedidos/               → app del dominio
   repositories.py      → consultas (incluye qué pedidos ve cada usuario)
   services.py          → flujo de compra y llamadas a Inventario y Pagos
   permissions.py       → permisos por rol
+  throttles.py         → límite de intentos del login
   views.py             → capa HTTP
   exceptions.py        → manejador centralizado con el formato de error del spec
 ```
@@ -83,7 +94,7 @@ pedidos/               → app del dominio
 | TP 1 | Configuración base, `.env`, DRF, health check, errores uniformes | ✅ |
 | TP 1 | Modelo Pedido, flujo de compra con Inventario | ✅ |
 | TP 2 | JWT y roles | ✅ |
-| TP 2 | Rate limiting, CORS, auditoría | Pendiente |
+| TP 2 | Rate limiting, CORS, auditoría | ✅ |
 | TP 3 | Integración con Pagos | ✅ |
 | TP 3 | WebSockets | Pendiente |
 | TP 4/5 | PostgreSQL, Daphne, Docker, OpenAPI, GraphQL | Pendiente |
