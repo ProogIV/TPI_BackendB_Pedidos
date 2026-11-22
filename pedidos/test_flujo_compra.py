@@ -8,6 +8,7 @@ de Python): así los tests no necesitan los otros servicios corriendo ni conexi�
 from unittest.mock import Mock, patch
 
 import requests
+from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 
 from .models import Pedido
@@ -45,6 +46,11 @@ def inventario_simulado(descuento, reposicion=REPOSICION_OK):
 @patch("pedidos.services.requests.patch")
 class FlujoDeCompraTests(APITestCase):
 
+    def setUp(self):
+        # Desde el TP 2 solo un CLIENTE autenticado puede comprar
+        self.cliente = User.objects.create_user("ana", password="clave-segura-123")
+        self.client.force_authenticate(self.cliente)
+
     def comprar(self, cantidad=2):
         return self.client.post(URL, {"producto_id": PRODUCTO_ID, "cantidad": cantidad}, format="json")
 
@@ -66,8 +72,11 @@ class FlujoDeCompraTests(APITestCase):
         self.assertEqual(kwargs["json"], {"cantidad": 2})
         self.assertEqual(kwargs["timeout"], 5)
 
-        # Se pidió a Pagos cobrar el monto total del pedido creado
+        # El pedido quedó a nombre del cliente autenticado
         pedido = Pedido.objects.get()
+        self.assertEqual(pedido.cliente, self.cliente)
+
+        # Se pidió a Pagos cobrar el monto total del pedido creado
         self.assertEqual(mock_post.call_args.kwargs["json"], {"order_id": pedido.id, "monto": 370000.0})
 
     def test_sin_stock_no_se_crea_el_pedido_ni_se_cobra(self, mock_patch, mock_post):

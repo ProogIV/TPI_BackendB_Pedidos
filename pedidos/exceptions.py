@@ -52,7 +52,9 @@ def custom_exception_handler(exc, context):
 
     datos = response.data
 
-    if isinstance(datos, dict) and set(datos.keys()) == {"detail"}:
+    if isinstance(datos, dict) and "detail" in datos:
+        # Errores con un mensaje principal. simplejwt agrega "code" y "messages" al "detail"
+        # cuando el token es inválido: alcanza con el "detail" para el formato uniforme.
         cuerpo = {"error": True, "mensaje": str(datos["detail"])}
     else:
         cuerpo = {
