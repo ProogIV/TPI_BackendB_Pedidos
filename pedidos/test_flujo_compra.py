@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 import requests
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from .models import Pedido
@@ -43,6 +44,7 @@ def inventario_simulado(descuento, reposicion=REPOSICION_OK):
     return responder
 
 
+@override_settings(SERVICE_TOKEN="token-de-prueba")
 @patch("pedidos.services.requests.post")
 @patch("pedidos.services.requests.patch")
 class FlujoDeCompraTests(APITestCase):
@@ -73,6 +75,8 @@ class FlujoDeCompraTests(APITestCase):
         self.assertTrue(url.endswith(f"/productos/{PRODUCTO_ID}/descontar"))
         self.assertEqual(kwargs["json"], {"cantidad": 2})
         self.assertEqual(kwargs["timeout"], 5)
+        # Pedidos se identifica ante Inventario con la clave de servicio (spec.md, sección 7)
+        self.assertEqual(kwargs["headers"], {"X-Service-Token": "token-de-prueba"})
 
         # El pedido quedó a nombre del cliente autenticado
         pedido = Pedido.objects.get()
@@ -159,3 +163,14 @@ class FlujoDeCompraTests(APITestCase):
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data["precio_unitario"], "185000.00")
         self.assertEqual(r.data["estado"], "FALLIDO")
+
+    def test_si_inventario_rechaza_la_clave_de_servicio_responde_503(self, mock_patch, mock_post):
+        mock_patch.side_effect = inventario_simulado(
+            respuesta(403, {"error": True, "mensaje": "Acceso reservado a servicios internos"})
+        )
+
+        r = self.comprar()
+
+        self.assertEqual(r.status_code, 503)
+        self.assertEqual(Pedido.objects.count(), 0)
+        mock_post.assert_not_called()

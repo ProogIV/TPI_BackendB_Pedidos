@@ -163,6 +163,8 @@ REST_FRAMEWORK = {
 # --- Servicios con los que se comunica Pedidos (spec.md, sección 1) ---
 
 INVENTARIO_API_URL = os.getenv("INVENTARIO_API_URL", "http://127.0.0.1:3000/api")
+# Clave compartida entre servicios: header X-Service-Token (spec.md, sección 7)
+SERVICE_TOKEN = os.getenv("SERVICE_TOKEN", "")
 PAGOS_API_URL = os.getenv("PAGOS_API_URL", "http://127.0.0.1:8001/api")
 TIMEOUT_SERVICIOS = 5  # segundos (spec.md, regla 7)
 

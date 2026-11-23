@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import SecurityLog
-from .permissions import EsCliente
+from .permissions import EsCliente, EsServicioInterno, es_servicio_interno
 from .repositories import PedidoRepository
 from .serializers import PedidoSerializer
 from .serializers_auth import RegisterSerializer, TokenConRolSerializer
@@ -75,13 +75,17 @@ class PedidoViewSet(
     ordering_fields = ["creado", "monto_total"]
 
     def get_queryset(self):
+        # Inventario (con su X-Service-Token) consulta los pedidos de un producto: ve todos
+        if es_servicio_interno(self.request) and not self.request.user.is_authenticated:
+            return PedidoRepository.get_queryset()
         return PedidoRepository.visibles_para(self.request.user)
 
     def get_permissions(self):
-        # Todo exige estar autenticado (configuración global); crear, además, ser cliente
+        # Crear: solo un cliente autenticado
         if self.action == "create":
             return [permissions.IsAuthenticated(), EsCliente()]
-        return super().get_permissions()
+        # Consultar: un usuario autenticado, o Inventario con la clave de servicio
+        return [(permissions.IsAuthenticated | EsServicioInterno)()]
 
     def create(self, request, *args, **kwargs):
         # La vista solo valida la entrada y arma la respuesta HTTP: el flujo vive en el servicio

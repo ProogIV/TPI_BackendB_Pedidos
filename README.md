@@ -46,6 +46,7 @@ Para crear un administrador: `python manage.py createsuperuser`.
 | Límites generales | 20 peticiones por minuto para anónimos (por IP) y 100 para usuarios autenticados |
 | CORS | Solo los orígenes de `CORS_ALLOWED_ORIGINS` (el frontend) pueden leer las respuestas desde el navegador |
 | Auditoría | Cada login fallido se guarda en el modelo `SecurityLog` (visible en `/admin/`) y en el archivo `security.log`, sin la contraseña |
+| Acceso entre servicios | Inventario consulta `GET /api/orders/?producto_id=` con el header `X-Service-Token` (clave `SERVICE_TOKEN`); Pedidos manda la misma clave al descontar y reponer stock |
 | Sanitización (`nh3`) | No se aplica: los pedidos no tienen campos de texto libre. Todos los datos de entrada se validan con formato estricto (ID de MongoDB, enteros positivos) |
 
 ## Endpoints de pedidos
