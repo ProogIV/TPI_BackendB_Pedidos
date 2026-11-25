@@ -24,6 +24,8 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 # --- Aplicaciones ---
 
 INSTALLED_APPS = [
+    # Daphne tiene que ir PRIMERO: así runserver levanta el servidor ASGI (Clase 9)
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -36,6 +38,7 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "drf_yasg",
+    "channels",
     # Propias
     "pedidos",
 ]
@@ -171,6 +174,23 @@ INVENTARIO_API_URL = os.getenv("INVENTARIO_API_URL", "http://127.0.0.1:3000/api"
 SERVICE_TOKEN = os.getenv("SERVICE_TOKEN", "")
 PAGOS_API_URL = os.getenv("PAGOS_API_URL", "http://127.0.0.1:8001/api")
 TIMEOUT_SERVICIOS = 5  # segundos (spec.md, regla 7)
+
+
+# --- WebSocket: channel layer (Clases 9 y 10, spec.md sección 8) ---
+# Con REDIS_URL (Docker) los grupos viven en Redis, compartidos entre procesos (Clase 10).
+# Sin REDIS_URL (desarrollo y tests) se usa el layer en memoria de la Clase 9: alcanza con un
+# solo proceso y permite correr los tests sin tener Redis instalado.
+
+REDIS_URL = os.getenv("REDIS_URL")
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        },
+    }
+else:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 
 # --- JWT (Clase 6, spec.md sección 7) ---
