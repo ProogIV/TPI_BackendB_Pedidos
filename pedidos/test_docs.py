@@ -11,10 +11,14 @@ class DocumentacionTests(APITestCase):
     def test_el_esquema_openapi_incluye_los_endpoints(self):
         r = self.client.get("/swagger.json")
         self.assertEqual(r.status_code, 200)
-        rutas = r.json()["paths"]
-        self.assertIn("/api/orders/", rutas)
-        self.assertIn("/api/token/", rutas)
-        self.assertIn("/api/auth/register/", rutas)
+        esquema = r.json()
+
+        # drf-yasg agrupa el prefijo común "/api" en basePath (formato OpenAPI 2)
+        self.assertEqual(esquema["basePath"], "/api")
+        rutas = esquema["paths"]
+        self.assertIn("/orders/", rutas)
+        self.assertIn("/token/", rutas)
+        self.assertIn("/auth/register/", rutas)
 
     def test_la_interfaz_swagger_responde(self):
         self.assertEqual(self.client.get("/swagger/").status_code, 200)
