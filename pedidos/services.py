@@ -25,6 +25,11 @@ def _mensaje_de_error(respuesta, por_defecto):
         return por_defecto
 
 
+def _headers_de_servicio():
+    """Pedidos se identifica ante Inventario con la clave compartida (spec.md, sección 7)."""
+    return {"X-Service-Token": settings.SERVICE_TOKEN}
+
+
 class InventarioClient:
     """Llamadas HTTP al servicio de Inventario (spec.md, sección 4.1)."""
 
@@ -32,7 +37,9 @@ class InventarioClient:
     def descontar_stock(producto_id, cantidad):
         url = f"{settings.INVENTARIO_API_URL}/productos/{producto_id}/descontar"
         try:
-            respuesta = requests.patch(url, json={"cantidad": cantidad}, timeout=settings.TIMEOUT_SERVICIOS)
+            respuesta = requests.patch(
+                url, json={"cantidad": cantidad}, headers=_headers_de_servicio(), timeout=settings.TIMEOUT_SERVICIOS
+            )
         except requests.RequestException:
             # Inventario apagado o no respondió en 5 segundos (timeout)
             raise ServicioNoDisponible("El servicio de Inventario no está disponible.")
@@ -41,6 +48,10 @@ class InventarioClient:
             return respuesta.json()
         if respuesta.status_code == 404:
             raise ProductoNoEncontrado(_mensaje_de_error(respuesta, "El producto no existe o está inactivo."))
+        if respuesta.status_code == 403:
+            # La clave de servicio no coincide: es un error de configuración, no del cliente
+            logger.error("Inventario rechazó el X-Service-Token: revisar SERVICE_TOKEN en ambos .env")
+            raise ServicioNoDisponible("No se pudo autorizar la operación con Inventario.")
         if respuesta.status_code == 400:
             raise PedidoRechazado(_mensaje_de_error(respuesta, "Inventario rechazó el pedido."))
         raise ServicioNoDisponible("El servicio de Inventario respondió con un error inesperado.")
@@ -50,7 +61,9 @@ class InventarioClient:
         """Compensación: devuelve el stock si el cobro falló. Devuelve True si se pudo."""
         url = f"{settings.INVENTARIO_API_URL}/productos/{producto_id}/reponer"
         try:
-            respuesta = requests.patch(url, json={"cantidad": cantidad}, timeout=settings.TIMEOUT_SERVICIOS)
+            respuesta = requests.patch(
+                url, json={"cantidad": cantidad}, headers=_headers_de_servicio(), timeout=settings.TIMEOUT_SERVICIOS
+            )
         except requests.RequestException:
             return False
         return respuesta.status_code == 200
