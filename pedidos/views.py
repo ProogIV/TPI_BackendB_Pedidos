@@ -75,6 +75,9 @@ class PedidoViewSet(
     ordering_fields = ["creado", "monto_total"]
 
     def get_queryset(self):
+        # drf-yasg llama a get_queryset sin usuario real para armar la documentación
+        if getattr(self, "swagger_fake_view", False):
+            return PedidoRepository.get_queryset().none()
         # Inventario (con su X-Service-Token) consulta los pedidos de un producto: ve todos
         if es_servicio_interno(self.request) and not self.request.user.is_authenticated:
             return PedidoRepository.get_queryset()

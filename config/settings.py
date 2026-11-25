@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "django_filters",
     "corsheaders",
+    "drf_yasg",
     # Propias
     "pedidos",
 ]
@@ -219,3 +220,19 @@ LOGGING = {
 # --- Producción (Clase 12) ---
 # Orígenes confiables para formularios con sesión (login del /admin/) cuando DEBUG=False
 CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+
+
+# --- Documentación OpenAPI con drf-yasg (cronograma, 18/11) ---
+# Agrega en /swagger/ el botón "Authorize" para probar los endpoints con el token JWT.
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "Escribir: Bearer <access token obtenido en /api/token/>",
+        }
+    },
+}
