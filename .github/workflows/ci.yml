@@ -1,0 +1,59 @@
+name: Continuous Integration - E-commerce Microservices
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  # -------------------------------------------------------------
+  # Job 2: Pruebas del Backend B (Pedidos - Python + Django)
+  # -------------------------------------------------------------
+  test-pedidos:
+    name: Test Pedidos (Django)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_pedidos_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: pedidos/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd pedidos
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Django unit tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: test_pedidos_db
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          SECRET_KEY: test_django_secret
+        run: |
+          cd pedidos
+          python manage.py test
