@@ -43,6 +43,8 @@ MIDDLEWARE = [
     # CORS tiene que ir primero, antes de CommonMiddleware (Clase 8)
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Sirve los archivos estáticos (CSS del /admin/ y de la Browsable API) con DEBUG=False (Clase 12)
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -121,6 +123,7 @@ USE_TZ = True
 # --- Archivos estáticos ---
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"  # collectstatic junta acá los archivos para WhiteNoise
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -211,3 +214,8 @@ LOGGING = {
         "security": {"handlers": ["archivo_seguridad"], "level": "WARNING"},
     },
 }
+
+
+# --- Producción (Clase 12) ---
+# Orígenes confiables para formularios con sesión (login del /admin/) cuando DEBUG=False
+CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]

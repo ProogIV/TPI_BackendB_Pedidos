@@ -36,7 +36,8 @@ Verificar: `GET http://127.0.0.1:8000/api/health/` → `{"status": "ok", "servic
 Todos los endpoints de `/api/orders/` exigen el header `Authorization: Bearer <access>`.
 El **cliente** crea y ve solo sus pedidos; el **administrador** (`is_staff`) ve todos y no puede comprar.
 
-Para crear un administrador: `python manage.py createsuperuser`.
+Para crear los usuarios de prueba (`admin` y `cliente`, ver `.env.example`): `python manage.py seed`.
+Para crear otro administrador: `python manage.py createsuperuser`.
 
 ## Seguridad (Clase 8)
 

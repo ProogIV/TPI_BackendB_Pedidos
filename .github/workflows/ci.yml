@@ -1,10 +1,11 @@
 name: Continuous Integration - Pedidos
 
 on:
+  # La rama principal de este repositorio es master
   push:
-    branches: [ main, dev ]
+    branches: [ master, main, dev ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ master, main, dev ]
 
 jobs:
   test-pedidos:
@@ -54,5 +55,5 @@ jobs:
           DB_USER: test_user
           DB_PASSWORD: test_password
           SECRET_KEY: test_secret_key_para_ci_sin_usar_en_produccion
-          JWT_SIGNING_KEY: test_jwt_signing_key_para_ci
+          JWT_SIGNING_KEY: test_jwt_signing_key_para_ci_de_al_menos_32_caracteres
         run: python manage.py test

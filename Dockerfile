@@ -13,8 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar todo el código fuente del proyecto Django
+# Copiar todo el código fuente del proyecto Django (.dockerignore excluye venv, .env, etc.)
 COPY . .
+
+# Junta los archivos estáticos para que WhiteNoise los sirva (Clase 12). La SECRET_KEY es falsa a
+# propósito: este paso ocurre al construir la imagen, cuando todavía no existen las claves reales.
+RUN SECRET_KEY=solo-para-construir python manage.py collectstatic --noinput
 
 # Puerto expuesto para HTTP y WebSockets
 EXPOSE 8000
