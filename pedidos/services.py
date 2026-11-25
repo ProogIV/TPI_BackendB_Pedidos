@@ -8,6 +8,8 @@ import logging
 from decimal import Decimal
 
 import requests
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.conf import settings
 
 from .exceptions import PedidoRechazado, ProductoNoEncontrado, ServicioNoDisponible
@@ -129,5 +131,54 @@ class PedidoService:
                     pedido.id, producto_id, cantidad,
                 )
 
-        # TP 3: acá se enviará la notificación por WebSocket (spec.md, sección 8)
+        # 5. Avisar por WebSocket: el pedido ya está guardado con su estado final (Clase 10)
+        NotificacionService.pedido_actualizado(pedido)
         return pedido
+
+
+class NotificacionService:
+    """
+    Publica eventos en tiempo real (Clase 10, patrón Productor → Broker → Consumidor).
+
+    El servicio no sabe cuántas conexiones hay abiertas: solo publica en los grupos y el
+    channel layer se lo reparte a cada WebSocket conectado (pedidos/consumers.py).
+    """
+
+    GRUPO_ADMIN = "pedidos_admin"
+
+    @staticmethod
+    def grupo_usuario(usuario_id):
+        return f"pedidos_usuario_{usuario_id}"
+
+    @staticmethod
+    def pedido_actualizado(pedido):
+        payload = {
+            "tipo": "pedido_actualizado",
+            "pedido": {
+                "id": pedido.id,
+                "estado": pedido.estado,
+                "monto_total": str(pedido.monto_total),
+                "producto_id": pedido.producto_id,
+            },
+        }
+        # El dueño del pedido recibe el aviso; los ADMIN reciben todos (spec.md, sección 8)
+        grupos = [NotificacionService.GRUPO_ADMIN]
+        if pedido.cliente_id:
+            grupos.append(NotificacionService.grupo_usuario(pedido.cliente_id))
+        for grupo in grupos:
+            NotificacionService._send(grupo, payload)
+
+    @staticmethod
+    def _send(grupo, payload):
+        channel_layer = get_channel_layer()
+        try:
+            async_to_sync(channel_layer.group_send)(
+                grupo,
+                {
+                    "type": "pedido_actualizado",  # coincide con el método del consumer
+                    "payload": payload,
+                },
+            )
+        except Exception:
+            # Si Redis está caído, el pedido igual se guardó: solo queda registrado en el log
+            logger.exception("No se pudo enviar la notificación en tiempo real")
