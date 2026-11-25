@@ -50,6 +50,14 @@ Para crear otro administrador: `python manage.py createsuperuser`.
 | Acceso entre servicios | Inventario consulta `GET /api/orders/?producto_id=` con el header `X-Service-Token` (clave `SERVICE_TOKEN`); Pedidos manda la misma clave al descontar y reponer stock |
 | Sanitización (`nh3`) | No se aplica: los pedidos no tienen campos de texto libre. Todos los datos de entrada se validan con formato estricto (ID de MongoDB, enteros positivos) |
 
+## Documentación de la API (OpenAPI)
+
+Generada automáticamente con `drf-yasg`:
+
+- Swagger UI: http://127.0.0.1:8000/swagger/ (botón **Authorize** → `Bearer <access>`)
+- ReDoc: http://127.0.0.1:8000/redoc/
+- Esquema: http://127.0.0.1:8000/swagger.json
+
 ## Endpoints de pedidos
 
 | Método | Ruta | Descripción |
